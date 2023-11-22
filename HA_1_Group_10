@@ -1,0 +1,253 @@
+clear all
+close all
+clc
+
+%https://indico.cern.ch/event/145296/contributions/1381141/attachments/136909/194258/lecture24.pdf
+
+%pdf
+PU235= @(E) (0.4865*sinh((2.*E).^0.5).*exp(-E));
+
+%calculation of the probability densiti function, with energy
+xmax=120;
+xx=linspace (0, xmax, 120000);
+Pdf=PU235(xx);
+
+%% Mean value 
+
+%setting parameters
+dE=xx(2)-xx(1);
+sum=0;
+
+% function to integrate 
+FE= @(E) E.*(0.4865*sinh((2.*E).^0.5).*exp(-E));
+
+%manual integral
+for i=1:length(xx)
+    sum=sum+abs(FE((i+1)*dE)*dE+((FE((i+1)*dE)-FE(i*dE))^2/2)*dE);
+end
+
+sum
+
+%numerical integral
+ii=integral(FE, 0,xmax);
+
+% calucluation of the most probable energy using the derivative definition
+for i=2:length(Pdf)
+   if (Pdf(i)-Pdf(i-1))>0 && (Pdf(i)-Pdf(i+1))>0
+       Pdf(i)
+       i*dE
+   end
+
+end
+
+
+%% Variance 
+
+%function to integrate
+FEE= @(E) E.^2.*(0.4865*sinh((2.*E).^0.5).*exp(-E));
+
+%numerical integral
+variance=integral(FEE,0,xmax)-ii^2
+
+% manual integral
+var_manual=0;
+for i=1:length(xx)
+    var_manual=var_manual+abs(FEE((i+1)*dE)*dE+((FEE((i+1)*dE)-FEE(i*dE))^2/2)*dE);
+end
+
+var_manual=var_manual-sum^2
+
+%% standard deviation
+standar_dev=sqrt(variance);
+
+%% plot
+figure (1)
+plot (xx, Pdf,'r', 'LineWidth',3)
+hold on 
+grid on 
+title ("Probability Density Function for neutron enegry of the isotope ^{235}U")
+xlabel('Energy [MeV]')
+ylabel('Relative Probability [ ]')
+fontsize(24, "points")
+
+%% monte carlo
+%values of the function 
+xlimit=20;
+xx=linspace (0,xlimit,12000);
+prob=PU235(xx);
+
+%graph parameters
+ymax=max(prob); %highest y for area
+xmax=xx(end); %highest x for the area and right side of the integral
+s=length(xx);
+
+yymax=ymax*ones(s,1);
+xxmax=xmax*ones(s,1);
+
+%% Monte Carlo simulation
+
+% random value generation
+N=100000;
+j=1;
+h=1;
+for i=1:N
+    xrand=rand(1)*xmax;
+    yrand=rand(1)*ymax;
+
+    %comparison
+    frand=PU235(xrand);
+    if yrand<frand
+        under(j,1)=xrand;
+        under(j,2)=yrand;
+        j=j+1;
+    else 
+        over(h,1)=xrand;
+        over(h,2)=yrand;
+        h=h+1;
+    end
+
+
+end
+
+% Monte carlo integral 
+
+% most probable energy
+most_porb_value=max(under(:,2))
+% mean energy
+mean_energy=sum(under(:,1))/length(under)
+% variance
+sum_var=0;
+for i=1:length(under)
+    sum_var=sum_var+((under(i,1))-mean_energy)^2;
+end
+var_MC0=sum_var/length(under);
+%standard deviation
+standard_dev_MC=sqrt(var_MC0)
+%variance of the mean
+var_mean=var_MC0/length(under);
+%standard deviation of the mean
+std_mean=sqrt(var_mean);
+
+
+
+
+%% Plot
+%graph
+
+figure(2)
+%plot(xx,prob, 'b')
+hold on 
+xlim([0,21])
+plot(over(:,1), over(:,2), 'ro')
+plot(under(:,1), under(:,2), 'bo')
+%plot(xx,yymax, 'k', 'LineWidth', 2);
+%plot(xxmax,linspace(0, ymax,s), 'k','LineWidth', 2)
+legend("Discarded values", "Accepted values")
+xlabel("Energy [MeV]")
+ylabel("Relative Probability [ ]")
+fontsize(24, "points")
+
+
+%% iterative
+%equation 
+PU235= @(E) (0.4865*sinh((2.*E).^0.5).*exp(-E));
+xlimit=20;
+xx=linspace (0,xlimit,12000);
+prob=PU235(xx);
+
+%graph parameters
+ymax=max(prob); %highest y for area
+xmax=xx(end); %highest x for the area and right side of the integral
+size=length(xx);
+
+yymax=ymax*ones(size,1);
+xxmax=xmax*ones(size,1);
+
+for o=1:100
+%values of the function 
+
+
+
+
+% random value generation
+N=1000;
+j=1;
+h=1;
+for i=1:N
+    xrand=rand(1)*xmax;
+    yrand=rand(1)*ymax;
+
+    %comparison
+    frand=PU235(xrand);
+    if yrand<frand
+        under(j,1)=xrand;
+        under(j,2)=yrand;
+        j=j+1;
+    else 
+        over(h,1)=xrand;
+        over(h,2)=yrand;
+        h=h+1;
+    end
+
+
+end
+
+% Monte carlo integral 
+mean_energy=sum(under(:,1))/length(under);
+% var MC
+sum_var=0;
+for i=1:length(under)
+    sum_var=sum_var+((under(i,1))-mean_energy)^2;
+end
+var_MC0=sum_var/length(under);
+var_mean_MC=var_MC0/length(under);
+standard_dev_MC=sqrt(var_mean_MC);
+
+var_MC=var(under(:,1));
+
+mean_energy_v(o)=mean_energy;
+std_vec_MC(o)=standard_dev_MC;
+end
+
+
+
+dx=0.01;
+left=min(mean_energy_v);
+right=max(mean_energy_v);
+
+
+figure(3)
+histogram(mean_energy_v, 'BinWidth', (right-left)/15)
+title('Distribution of the mean values')
+xlabel('Mean Energies [MeV]')
+ylabel('Counts')
+fontsize(24,"points")
+
+
+
+
+VV=[1 2 3 4 5];
+ex_std=std_vec_MC(1);
+expected_value=2.010573875161740;
+%expected_value=mean(mean_energy_v);
+interval_prob=zeros(5,1);
+
+for i=1:length(VV)
+    P(i)=erf(VV(i)/sqrt(2));
+    delta(i)=ex_std*VV(i);
+
+    for j=1:length(mean_energy_v)
+        if mean_energy_v(j)>=(expected_value-delta(i) ) && mean_energy_v(j)<(expected_value+delta(i))
+            interval_prob(i)=interval_prob(i)+1;
+
+        end
+    end
+
+
+end
+
+
+
+
+
+
