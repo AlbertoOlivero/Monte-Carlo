@@ -64,7 +64,9 @@ var_mean=var_MC0/length(under);
 %standard deviation of the mean
 std_mean=sqrt(var_mean);
 
+find(under(:,2)==max(under(:,2)))
 
+Most_prob=under(ans,1)
 
 
 %% Plot
