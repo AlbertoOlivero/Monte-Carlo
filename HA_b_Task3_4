@@ -1,0 +1,84 @@
+clear all
+close all
+clc
+
+%equation 
+PU235= @(E) (0.4865*sinh((2.*E).^0.5).*exp(-E));
+
+
+
+%values of the function 
+xlimit=20;
+xx=linspace (0,xlimit,12000);
+prob=PU235(xx);
+
+%graph parameters
+ymax=max(prob); %highest y for area
+xmax=xx(end); %highest x for the area and right side of the integral
+s=length(xx);
+
+yymax=ymax*ones(s,1);
+xxmax=xmax*ones(s,1);
+
+%% Monte Carlo simulation
+
+% random value generation and accptance-rejection method
+N=10000;
+j=1;
+h=1;
+for i=1:N
+    xrand=rand(1)*xmax;
+    yrand=rand(1)*ymax;
+
+    %comparison
+    frand=PU235(xrand);
+    if yrand<frand
+        under(j,1)=xrand;
+        under(j,2)=yrand;
+        j=j+1;
+    else 
+        over(h,1)=xrand;
+        over(h,2)=yrand;
+        h=h+1;
+    end
+
+
+end
+
+% Monte carlo integral 
+
+% most probable energy
+most_porb_value=max(under(:,2))
+% mean energy
+mean_energy=sum(under(:,1))/length(under)
+% variance
+sum_var=0;
+for i=1:length(under)
+    sum_var=sum_var+((under(i,1))-mean_energy)^2;
+end
+var_MC0=sum_var/length(under);
+%standard deviation
+standard_dev_MC=sqrt(var_MC0)
+%variance of the mean
+var_mean=var_MC0/length(under);
+%standard deviation of the mean
+std_mean=sqrt(var_mean);
+
+
+
+
+%% Plot
+%graph
+
+figure(1)
+%plot(xx,prob, 'b')
+hold on 
+xlim([0,21])
+plot(over(:,1), over(:,2), 'ro', 'MarkerFaceColor','r')
+plot(under(:,1), under(:,2), 'bo','MarkerFaceColor','b')
+%plot(xx,yymax, 'k', 'LineWidth', 2);
+%plot(xxmax,linspace(0, ymax,s), 'k','LineWidth', 2)
+legend("Discarded values", "Accepted values")
+xlabel("Energy [MeV]")
+ylabel("Relative Probability [ ]")
+fontsize(24, "points")
