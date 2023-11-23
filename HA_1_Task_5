@@ -1,0 +1,101 @@
+clear all
+close all
+clc
+
+
+%equation 
+PU235= @(E) (0.4865*sinh((2.*E).^0.5).*exp(-E));
+xlimit=20;
+xx=linspace (0,xlimit,12000);
+prob=PU235(xx);
+
+%graph parameters
+ymax=max(prob); %highest y for area
+xmax=xx(end); %highest x for the area and right side of the integral
+size=length(xx);
+
+yymax=ymax*ones(size,1);
+xxmax=xmax*ones(size,1);
+
+for o=1:100
+%values of the function 
+
+
+
+
+% random value generation
+N=1000;
+j=1;
+h=1;
+for i=1:N
+    xrand=rand(1)*xmax;
+    yrand=rand(1)*ymax;
+
+    %comparison
+    frand=PU235(xrand);
+    if yrand<frand
+        under(j,1)=xrand;
+        under(j,2)=yrand;
+        j=j+1;
+    else 
+        over(h,1)=xrand;
+        over(h,2)=yrand;
+        h=h+1;
+    end
+
+
+end
+
+% Monte carlo integral 
+mean_energy=sum(under(:,1))/length(under);
+% var MC
+sum_var=0;
+for i=1:length(under)
+    sum_var=sum_var+((under(i,1))-mean_energy)^2;
+end
+var_MC0=sum_var/length(under);
+var_mean_MC=var_MC0/length(under);
+standard_dev_MC=sqrt(var_mean_MC);
+
+var_MC=var(under(:,1));
+
+mean_energy_v(o)=mean_energy;
+std_vec_MC(o)=standard_dev_MC;
+end
+
+
+
+dx=0.01;
+left=min(mean_energy_v);
+right=max(mean_energy_v);
+
+
+figure(1)
+histogram(mean_energy_v, 'BinWidth', (right-left)/15)
+title('Distribution of the mean values')
+xlabel('Mean Energies [MeV]')
+ylabel('Counts')
+fontsize(24,"points")
+
+
+
+
+VV=[1 2 3 4 5];
+ex_std=std_vec_MC(1);
+expected_value=2.010573875161740;
+%expected_value=mean(mean_energy_v);
+interval_prob=zeros(5,1);
+
+for i=1:length(VV)
+    P(i)=erf(VV(i)/sqrt(2));
+    delta(i)=ex_std*VV(i);
+
+    for j=1:length(mean_energy_v)
+        if mean_energy_v(j)>=(expected_value-delta(i) ) && mean_energy_v(j)<(expected_value+delta(i))
+            interval_prob(i)=interval_prob(i)+1;
+
+        end
+    end
+
+
+end
