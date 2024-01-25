@@ -1,0 +1,122 @@
+%----Begin of SERPENT file-----
+%-----Title and Settings-------
+set acelib "jeff311.xsdata"
+therm lwtr lwj3.11t
+set bc 2
+set his 1 
+
+
+%-----Surfaces--------
+surf 1 cube 0. 0. 0. 250.0
+surf 2 cube 0. 0. 0. 500.0 
+
+%-----Materials-------
+mat	fuel	-10.4
+92235.03c	0.0015
+92238.03c	0.0485
+8016.03c	0.316667
+1001.03c	0.6333333
+5010.03c	0.000115793
+ 
+
+
+mat	water	-1
+1001.03c	2
+8016.03c	1
+
+%-----Definition of the universe 0-------
+cell	one	0	fuel	-1
+cell	two	0	water	 1	-2
+cell    three   0       outside     2
+
+set pop 200 100000 1 
+
+
+plot 1 500 500
+mesh 1 500 500
+
+%-----End of SERPENT file-----
+
+%------Begin of MATLAB script for data analysis
+clear all
+close all
+clc
+
+N1=readmatrix("DataSerpent1.xlsx", "Range", "B1:B100");
+N2=readmatrix("DataSerpent1.xlsx", "Range","C1:C400");
+N3=readmatrix("DataSerpent1.xlsx", "Range", "D1:D1000");
+N4=readmatrix("DataSerpent1.xlsx", "Range","E1:E10000");
+N5=readmatrix("DataSerpent1.xlsx", "Range","F1:F100000");
+
+nn1=2e5;
+nn2=5e4;
+nn3=2e4;
+nn4=2e3;
+nn5=2e2;
+
+c1=100;
+c2=400;
+c3=1000;
+c4=1e4;
+c5=1e5;
+cc=[c1 c2 c3 c4 c5];
+
+v1=vector(nn1,c1);
+v2=vector(nn2,c2);
+v3=vector(nn3,c3);
+v4=vector(nn4,c4);
+v5=vector(nn5,c5);
+nn=[nn1 nn2 nn3 nn4 nn5];
+
+figure (1)
+plot(v1, N1, 'LineWidth',1.5, 'DisplayName', '2E5 neutrons - 100 cycles')
+hold on
+plot(v2, N2, 'LineWidth',1.5, 'DisplayName', '5E4 neutrons - 400 cycles')
+plot(v3, N3, 'LineWidth',1.5, 'DisplayName', '2E4 neutrons - 1000 cycles')
+plot(v4, N4, 'LineWidth',1.5, 'DisplayName', '2E3 neutrons - 10000 cycles')
+plot(v5, N5, 'LineWidth',1.5, 'DisplayName', '2E2 neutrons - 100000 cycles')
+xlim([2e5 2e7])
+legend show location southeast
+set (gca, 'fontsize' ,18)
+xlabel('Simulated neutron hysitories [ ]')
+ylabel('k_{eff, total} [ ]')
+
+
+%% figure of merit 
+
+%time           
+t(1)=9.61*60;     
+t(2)=9.52*60;     
+t(3)=9.63*60;     
+t(4)=9.61*60;     
+t(5)=22.7*60;    
+
+%fom
+figureofmerit(1)=fom(N1,t(1));
+figureofmerit(2)=fom(N2,t(2));
+figureofmerit(3)=fom(N3,t(3));
+figureofmerit(4)=fom(N4,t(4));
+figureofmerit(5)=fom(N5,t(5));
+ 
+[m,i]=max(figureofmerit)
+
+
+%% functions
+function [v]=vector(nn,c)
+for H=1:(c)
+    v(H)=H*nn;
+end
+end
+
+
+function [s]=fom(N,t)
+
+k=length(N);
+
+std1=std(N);
+stdmean=std1/sqrt(k);
+
+s=(stdmean^2*t)^(-1);
+
+end
+%------End of MATLAB script for data analysis
