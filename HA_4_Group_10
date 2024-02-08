@@ -1,4 +1,5 @@
-set title "PWR Burnup Calculation"
+%-----------Begin of SERPENT code--------
+set title "PWR Burnup Calculation Based on NEA Benchmark"
 
 % --- Fuel pins:
 
@@ -277,11 +278,12 @@ therm lwtr lwj3.11t
 
 % --- Cross section library file path:
 
-set acelib "/xs/sss_endfb7u.xsdata"
+set acelib "jeff311.xsdata"
 
 % --- Periodic boundary condition:
 
 set bc 3
+
 
 % --- Neutron population and criticality cycles:
 
@@ -293,97 +295,80 @@ plot 3 500 500
 mesh 3 500 500
 
 % --- Decay and fission yield libraries:
+% --- Decay and fission yield libraries:
 
-set declib "/xs/sss_endfb7.dec"
-set nfylib "/xs/sss_endfb7.nfy"
+set declib "sss_endfb7.dec"
+set nfylib "sss_endfb7.nfy"
+
+
 
 % --- Irradiation cycle:
 
 set powdens 38.6E-3
 
-dep daytot 
-1
+dep daystep
 100
-300
-365
-500
-730
-1095
-1200
-1460
+100
+100
+100
+100
+100
+100 
+100
+100
+100
+100
+100
+100
+100 
+100
 
 
-% --- Nuclide inventory:
+
+
+% --- Isotope list for inventory calculation:
 
 set inventory
+922350
+942390
+%-----------End of SERPENT code--------
 
-% 922340
- 922350
-% 922360
-% 922370
- 922380
-% 922390
-% 932360
-% 932370
-% 932380
-% 932390
-% 942360
-% 942380
- 942390
- 942400
- 942410
-% 942420
-% 942430
- 952410                                       
-% 952420
-% 952430
-% 952440
-% 952421
-% 962420
-% 962430
-% 962440
-% 962450
-% 962460
- 962470
-% 962480
-% 962490
- 972490
-% 972500
-% 982490
-% 982500
-% 982510
-% 982520
- % 360830
- % 451030
- % 451050
- % 471090
- % 531350
- % 541310
- % 541350
- % 551330
- % 551340
- % 551350
- % 551370
- % 561400
- % 571400
- % 601430
- % 601450
- % 611470
- % 611480
- % 611490
- % 611481
- % 621470
- % 621490
- % 621500
- % 621510
- % 621520
- % 631530
- % 631540
- % 631550
- % 631560
- % 641520
- % 641540
- % 641550
- % 641560
- % 641570
- % 641600
+%-----------Begin of MATLAB code for data analysis--------
+clear all
+close all
+clc
+
+k_eff=[1.15268 1.11442 1.11790 1.12870 1.12524 1.09637 1.06446  1.03257...
+    1.00334 9.73034e-1 9.45638e-1 9.20166e-1 8.94520e-1 8.71079e-1 8.48363e-1...
+    8.29494e-1];
+time=linspace(0,1500,16);
+
+Pu=[0.00000E+00 3.78563E-05 6.56154E-05 8.49412E-05 9.82147E-05 1.07519E-04 1.14107E-04 1.18728E-04 1.21787E-04 1.23643E-04 1.24589E-04 1.24889E-04 1.24664E-04 1.24272E-04 1.23650E-04 1.22968E-04];
+U=[9.34722E-04 8.30781E-04 7.38688E-04 6.55998E-04 5.81039E-04 5.12488E-04 4.49606E-04 3.92082E-04 3.39702E-04 2.92258E-04 2.49583E-04 2.11515E-04 1.77840E-04 1.48343E-04 1.22786E-04 1.00888E-04];
+Pu=Pu.*10^(24);
+U=U.*10^(24);
+
+
+figure(1)
+plot (time, k_eff,'r' ,'LineWidth',2)
+hold on
+legend('k_{eff}', 'Location', 'northeast')
+grid on 
+set (gca, 'fontsize', 20)
+title ('Time-dependency of k_{eff}')
+xlabel('Time [days]')
+ylabel('k_{eff}')
+
+
+figure (2)
+plot(time, Pu ,'LineWidth',2)
+hold on 
+plot (time, U ,'LineWidth',2)
+grid on 
+set (gca, 'fontsize', 20)
+legend ('^{239}Pu concentration', '^{238}U concentration', 'Location','northeast' )
+title('Time-depencency of concentration of relevant isotopes')
+xlabel('Time [days]')
+ylabel('Atomic concentration [atoms/cm^3]')
+
+%-----------End of MATLAB code for data analysis-----------
