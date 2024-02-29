@@ -1,0 +1,312 @@
+% --- 3D TRIGA core
+
+
+% --- NAME -----------------------------------------------
+	set title "TRIGA Reactor"
+
+% --- LIBRARY DEFINITION ---------------------------------
+	set acelib "jeff311.xsdata"
+
+	set seed 14321
+
+% --- Decay data library needs to be specified for burnup calculations
+
+set declib "sss_endfb7.dec"
+set nfylib "sss_endfb7.nfy"
+
+
+% --- MATERIALS -----------------------------------------------
+
+%input definition
+%mat <name> <dens> [<options>]
+%<iso 1> <frac 1>
+%<iso 2> <frac 2>
+
+
+	% --- Cladding
+	mat Cladding 	-5.015 rgb 150 150 150
+	V-nat.03c 	-0.1
+	Cr-nat.03c 	-0.02
+	Mn-55.03c 	-0.01
+	Fe-nat.03c 	-0.1
+	Al-27.03c 	-99.57
+	Cu-nat.03c 	-0.1
+	Ga-nat.03c 	-0.1
+	
+	% --- Stainless steel cladding (have to verify composition and density!! aisi 304)
+	mat CladdingSS  -7.93 rgb 255 255 255 
+	C-nat.03c 	-0.0007
+	Cr-nat.03c 	-0.18
+	Mn-55.03c 	-0.02
+	Fe-nat.03c 	-0.6993
+	Si-nat.03c	-0.01
+	Ni-nat.03c	-0.09
+
+	% --- Fuel 
+	mat Fuel 	-6.3  tmp 300 rgb 255 0 0 moder lw 1001 burn 1 vol 28184.7
+	Zr-nat.03c 	-91
+	H-1.03c  	-1
+	92235.03c 	-1.6
+	92238.03c 	-6.4
+
+	% --- Water 
+	mat Water        -0.99669 rgb 0 0 255 moder lw 1001   
+	O-16.03c         1
+	H-1.03c          2
+
+	% --- Vacuum
+	mat Vacuum 	0.001 	rgb 230	230 230
+	O-16.03c	-10
+	N-14.03c	-90	
+	
+	% --- Control Rods
+	mat ControlRod	-2.52	rgb 0 150 150 burn 1 vol 352.31
+	B-10.03c	15.8
+	B-11.03c	64.2
+	C-12.03c	20
+	 
+	% --- Graphite (density from: Final characterization of the first critical configuration for the TRIGA Mark II reactor of the University of Pavia using the Monte Carlo code MCNP)
+	mat Graphite	-1.7	rgb 80 80 80
+	C-12.03c	1
+	
+% --- Thermal scattering data: ZrH, Light Water,graphite -----------------------------------
+
+therm   gr	grj3.00t
+
+therm 	lw	lwj3.00t
+		
+
+% --- GEOMETRY -----------------------------------------------
+
+%input definition
+%surf NAME TYPE [ PARAM1 PARAM2 ... ]
+
+%Different surface type (cm)
+
+% inf
+% cyl x0 y0 r;
+% sph   x0 y0 z0 r;
+% hexxc x0 y0 r;
+% px z0
+
+	
+	
+	surf   sf   cyl    0.0    0.0    1.79 	     	%Inner radius Fuel Element
+	surf   sfc   cyl    0.0    0.0    1.880        	%Outer radius  Fuel Cladding
+
+	surf  scch	cyl 0.0 0.0 1.905		%Outer radius central channel
+
+	surf  sshim	cyl 0.0 0.0 1.425		%inner shim radius
+	surf  sshimc	cyl 0.0 0.0 1.59		%uter shim radius
+	surf shimplane	pz	10.47
+	
+	surf  sreg	cyl 0.0 0.0 0.965		%inner reg  radius
+	surf  sregc	cyl 0.0 0.0 1.11		%uter reg  radius
+	surf  stran	cyl 0.0 0.0 1.105		%inner trans  radius
+	surf  stranc 	cyl 0.0 0.0 1.27		%outr trans radius
+	surf  srod	pz  45.47			%control rod length from 0
+
+	surf  stop   pz    55.7				%top reflector
+	surf  sbot   pz    0				%reflector bottom	
+
+	surf  sfbot    pz    10.07 			%Start of the active lenght
+	surf  sftop    pz    46.63	 		%End of the active lenght
+
+	surf  sref	cyl 0.0 0.0 22.85		%inner radius reflector
+	surf  s1    	cyl 0.0 0.0 40.00        	%cylindrical surface delimiting the core	
+	surf  sstop 	pz  85			     	%end of domain up	
+	surf  ssbot 	pz  -50			     	%end of domain bottom	
+	
+	surf sinf inf					%infinite sourface for group constant generation
+
+% --- CELL -----------------------------------------------
+
+%CELL DEFINITION FOR GROUP CONSTANT GENERATION
+
+	cell fuel_gcu 100 Fuel 		-sinf
+%	cell clad_gcu 200 Cladding 	-sinf
+	cell wat_gcu  300 Water 	-sinf
+	cell grap_gcu  400 Graphite	-sinf
+
+
+%Definition of fuel element in universe 1
+	% --- Fuel Element definition with alu cladding
+	cell  cf1      1    fill 100          -sf		sfbot	-sftop	%Fuel
+	cell  cgt1     1    Graphite          -sf               sftop   -stop  %top reflector   	
+	cell  cgb1     1    Graphite          -sf               sbot   -sfbot   %bottom reflector
+	cell  cc1      1    Cladding      sf	-sfc	sbot	-stop 	%Cladding
+	cell  cwi1      1    fill 300         sfc      	sbot	-stop	%Water in-core
+	cell  cwob1     1    fill 300                   	-sbot		%Water out-core (below) 
+	cell  cwoa1     1    fill 300         			stop   	%Water out-core (above)
+%Definition of fuel element in universe 8
+
+	% --- Fuel element with SS cladding
+	cell  cf8      8    fill 100          -sf		sfbot	-sftop	%Fuel
+	cell  cgt8     8    Graphite          -sf               sftop   -stop  %top reflector   	
+	cell  cgb8     8    Graphite          -sf               sbot   -sfbot   %bottom reflector
+	cell  cc8      8    CladdingSS      sf	-sfc	sbot	-stop 	%Cladding
+	cell  cwi8      8    fill 300         sfc      	sbot	-stop	%Water in-core
+	cell  cwob8     8    fill 300                   	-sbot		%Water out-core (below) 
+	cell  cwoa18    8    fill 300         			stop   	%Water out-core (above)
+	
+%definition of central channel universe 2
+	cell  ccch      2    Vacuum	-sfc	sbot	-stop	
+	cell  cc2	2    Cladding	sfc	-scch	-stop	sbot
+	cell  cwi2      2    fill 300      sfc     sbot	-stop		%Water in-core
+	cell  cwob2     2    fill 300                   	-sbot  		%Water out-core (below)
+	cell  cwoa2     2    fill 300         			stop   	%Water out-core (above)
+%definition of SHIM cr in universe 3
+	cell  cshim	3	ControlRod	-sshim	shimplane  	-srod		%inner rod
+	cell  cshimc	3	Cladding	sshim	-sshimc	sbot	-srod	%cladding
+	cell cvoid	 3	Vacuum		sbot -shimplane -sshim		%air
+	cell  cwi3       3    	fill 300         	sshimc  sbot	-srod		%Water in-core
+	cell  cwob3      3    	fill 300                   	-sbot		%Water out-core (below) 
+	cell  cwoa3      3    	fill 300         			srod   	%Water out-core (above)	
+%definition of REG cr in universe 4
+	cell  creg	4	ControlRod	-sreg	sbot	-srod		%inner rod
+	cell  cregc	4	Cladding	sreg	-sregc	sbot	-srod	%cladding
+	cell  cwi4       4    	fill 300        sregc  sbot	-srod		%Water in-core
+	cell  cwob4      4    	fill 300                   	-sbot		%Water out-core (below) 
+	cell  cwoa4      4    	fill 300         			srod   	%Water out-core (above)	
+%definition of TRANS cr in universe 5
+	cell  ctran	5	ControlRod	-stran	sbot	-srod		%inner rod
+	cell  ctranc	5	Cladding	stran	-stranc	sbot	-srod	%cladding
+	cell  cwi5       5    	fill 300        stranc  sbot	-srod		%Water in-core
+	cell  cwob5      5    	fill 300                   	-sbot		%Water out-core (below) 
+	cell  cwoa5      5    	fill 300         			srod   	%Water out-core (above)		
+%definition of Graphite in universe 6
+	cell  cgraphite	 6	Graphite	-sf	sbot	-stop		%graphite rod	
+	cell  cgraphitec 6	Cladding	sf	-sfc	sbot	-stop	%cladding for graphite element
+	cell  cwi6       6    	fill 300        sfc  	sbot	-stop		%Water in-core
+	cell  cwob6      6    	fill 300                   	-sbot		%Water out-core (below) 
+	cell  cwoa6      6   	fill 300         			stop   	%Water out-core (above)	
+
+%definition of empty channel universe 7
+	cell  cech      7    Vacuum	-sfc	sbot	-stop	
+	cell  cechc	7    Cladding	sfc	-scch	-sbot	stop
+	cell  cwi7      7    fill 300      sfc     sbot	-stop		%Water in-core
+	cell  cwob7     7    fill 300                   -sbot  		%Water out-core (below)
+	cell  cwoa7     7    fill 300         			stop   	%Water out-core (above)		
+
+% --- Lattice core definitiion
+
+
+%fills lattice with element in universe 1 2 3 4 5 6 7
+% 1 fuel
+% 6 graphite
+%...	
+	lat 10 4 0 0 6
+	1 	0.0 	0.0 	3
+	6 	4.20 	30 	8 8 8 8 8 8
+	12 	8.15 	0 	8 2 8 8 8 8 8 8 8 8 8 8
+	18 	12.15 	30 	1 1 1 1 1 1 1 1 1 1 1 1 2 1 1 1 1 1
+	24 	16.33 	0 	1 1 1 1 1 1 1 1 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 1
+	30 	20.34 	30 	8 1 6 6 7 6 6 6 8 1 8 1 8 1 7 1 8 1 8 1 8 1 8 1 8 1 8 8 8 1
+
+
+	% --- Cell c2 belongs to the base universe 0, is defined as an "outside" cell
+	%     and covers everything outside surface s1
+	% NOTE univere 0 is peculiar for the plot
+
+	%creating final geometry including lattice and water up and down
+	
+	
+	cell core 	11 	fill 10 	-sref 
+	cell cref	11 	Graphite 	sref   
+	cell ccore	0 	fill 11		-s1 ssbot -sstop
+	cell c0 	0 	outside    	sstop
+	cell c1 	0 	outside    	-ssbot 
+	cell c2 	0 	outside    	s1  ssbot -sstop
+
+% --- CONTROL RODS MOVEMENTS -----------------------------------
+
+%command for moving geometry is trans
+%trans universe x y z
+% -5 is central insertion
+
+%trans u 3 0 0 10
+%trans u 3 0 0 15
+%trans u 3 0 0 20
+%trans u 3 0 0 25
+%trans u 3 0 0 30
+%trans u 3 0 0 35
+%trans u 3 0 0 40
+%trans u 3 0 0 45	
+
+% --- NEUTRON POPULATION AND CRITICAL CYCLES --------------
+
+%set pop <npop> <cycles> <skip> [<keff0> <int>]
+%npop=# neutrons per cycle, cycles=# active cycles, skip=# inactive cycle
+
+	
+	% --- Neutron population: 10000 neutrons per cycle, 200 active / 100 inactive cycles
+
+	set pop 10000 5000 100
+
+
+	
+
+
+	
+% --- BOUNDARY CONDITION (1 = black, 2 = reflective, 3 = periodic) -----------------------------------
+%The reflective and periodic boundary conditions can only be used in geometries where
+%the outer boundary surface is either a square or a hexagonal cylinder or a cube.
+
+set bc 1
+
+
+
+% --- PLOT GEOMETRY -----------------------------------
+
+%plot direction nx_pixel ny_pixel positionInPerpDir x_range y_range
+
+plot 3  2000  2000 25
+
+plot 1  2000  2000	
+
+
+
+% --- The third plot is perpendicular to y-axis (2) i.e. an xz-plot
+
+plot 2  2000  2000 
+
+
+%mesh 3 2000 2000 
+%mesh 1 2000 2000
+
+%--- Detector Definition 
+
+
+%--- Bunrup calculations
+
+/***************************************
+ * Settings for the burnup calculation *
+ ***************************************/
+% --- Geometry and mesh plots:
+
+%div fuel  sep 1 subr 10 0.0 4.38E-01
+
+
+%plot 4 2000 2000
+%mesh 4 2000 2000
+
+
+set powdens 120E-3
+
+
+dep daystep
+730
+730
+730
+
+set inventory
+922350
+922380
+50100
+50110
+60120
+
+
+
+
+
